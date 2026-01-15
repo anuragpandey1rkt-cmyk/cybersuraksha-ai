@@ -100,18 +100,22 @@ if "user" not in st.session_state:
 
     # ---------- LOGIN ----------
     with login_tab:
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_password")
+            email = st.text_input("Email", key="login_email")
+            password = st.text_input("Password", type="password", key="login_password")
 
-        if st.button("Login", key="login_btn"):
-            try:
-                user = login(email, password)
-                st.session_state.user = user
-                st.success("Logged in successfully")
-                st.rerun()
-                st.stop()
-            except:
-                st.error("Invalid credentials")
+            if st.button("Login", key="login_btn"):
+                response = supabase.auth.sign_in_with_password(
+                    {"email": email, "password": password}
+                )
+
+                if response.user:
+                    st.session_state.user = response.user
+                    st.success("Logged in successfully")
+                    st.rerun()
+                    st.stop()
+                else:
+                    st.error("Invalid credentials")
+
 
     # ---------- SIGN UP ----------
     with signup_tab:
