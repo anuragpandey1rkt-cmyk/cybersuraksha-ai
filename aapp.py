@@ -124,17 +124,17 @@ if "user" not in st.session_state:
                 st.error("Invalid credentials")
 
     with tab2:
-        email = st.text_input("New Email")
-        password = st.text_input("New Password", type="password")
+        new_email = st.text_input("New Email")
+        new_password = st.text_input("New Password", type="password")
         if st.button("Create Account"):
             try:
-                signup(email, password)
+                signup(new_email, new_password)
                 st.success("Account created successfully. Please login.")
             except Exception as e:
                 if "weak password" in str(e).lower():
                     st.error("Password too weak. Use at least 6 characters with numbers & symbols.")
-                 else:
-                    st.error("Signup failed. Try a stronger password or different email.")
+                else:
+                    st.error("Signup failed. Try a different email or stronger password.")
 
 else:
     st.subheader("🔍 Cyber Threat Analyzer")
