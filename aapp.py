@@ -96,27 +96,29 @@ st.title("🛡️ CyberSuraksha AI")
 st.caption("Defending Digital Citizens from Online Scams")
 
 if "user" not in st.session_state:
-    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    login_tab, signup_tab = st.tabs(["Login", "Sign Up"])
 
-    with tab1:
-            email = st.text_input("Email")
-            password = st.text_input("Password", type="password")
+    # ---------- LOGIN ----------
+    with login_tab:
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Password", type="password", key="login_password")
 
-            if st.button("Login"):
-                try:
-                    user = login(email, password)
-                    st.session_state.user = user
-                    st.success("Logged in successfully")
-                    st.rerun()
-                    st.stop()  # 🔥 IMPORTANT: stops further execution
-                except:
-                    st.error("Invalid credentials")
+        if st.button("Login", key="login_btn"):
+            try:
+                user = login(email, password)
+                st.session_state.user = user
+                st.success("Logged in successfully")
+                st.rerun()
+                st.stop()
+            except:
+                st.error("Invalid credentials")
 
+    # ---------- SIGN UP ----------
+    with signup_tab:
+        new_email = st.text_input("New Email", key="signup_email")
+        new_password = st.text_input("New Password", type="password", key="signup_password")
 
-    with tab2:
-        new_email = st.text_input("New Email")
-        new_password = st.text_input("New Password", type="password")
-        if st.button("Create Account"):
+        if st.button("Create Account", key="signup_btn"):
             try:
                 signup(new_email, new_password)
                 st.success("Account created. Please login.")
@@ -126,24 +128,33 @@ if "user" not in st.session_state:
 else:
     st.subheader("🔍 Cyber Threat Analyzer")
 
-    tab1, tab2 = st.tabs(["📩 Message Scanner", "🌐 URL Checker"])
+    msg_tab, url_tab = st.tabs(["📩 Message Scanner", "🌐 URL Checker"])
 
-    with tab1:
+    # ---------- MESSAGE SCANNER ----------
+    with msg_tab:
         message = st.text_area("Paste suspicious message", height=160)
-        if st.button("Analyze Message"):
-            result = analyze_text(message)
-            show_risk_badge(extract_risk_level(result))
-            st.write(result)
+        if st.button("Analyze Message", key="analyze_msg"):
+            if message.strip() == "":
+                st.warning("Please enter a message.")
+            else:
+                result = analyze_text(message)
+                show_risk_badge(extract_risk_level(result))
+                st.write(result)
 
-    with tab2:
-        url = st.text_input("Enter suspicious URL")
-        if st.button("Check URL"):
-            result = analyze_url(url)
-            show_risk_badge(extract_risk_level(result))
-            st.write(result)
+    # ---------- URL SCANNER ----------
+    with url_tab:
+        url = st.text_input("Enter suspicious URL", key="url_input")
+        if st.button("Check URL", key="check_url"):
+            if url.strip() == "":
+                st.warning("Please enter a URL.")
+            else:
+                result = analyze_url(url)
+                show_risk_badge(extract_risk_level(result))
+                st.write(result)
 
     st.divider()
 
-    if st.button("Logout"):
+    if st.button("Logout", key="logout"):
         st.session_state.clear()
-        
+        st.rerun()
+
