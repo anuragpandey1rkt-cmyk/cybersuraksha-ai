@@ -89,6 +89,11 @@ def show_risk_badge(level):
     else:
         st.success("🟢 LOW RISK — No major threats detected.")
 
+
+def demo_login():
+    st.session_state.user = "demo"
+    st.session_state.demo = True
+
 # =============================
 # UI
 # =============================
@@ -103,18 +108,29 @@ if "user" not in st.session_state:
             email = st.text_input("Email", key="login_email")
             password = st.text_input("Password", type="password", key="login_password")
 
-            if st.button("Login", key="login_btn"):
-                response = supabase.auth.sign_in_with_password(
-                    {"email": email, "password": password}
-                )
+            col1, col2 = st.columns(2)
 
-                if response.user:
-                    st.session_state.user = response.user
-                    st.success("Logged in successfully")
+            with col1:
+                if st.button("Login", key="login_btn"):
+                    response = supabase.auth.sign_in_with_password(
+                         {"email": email, "password": password}
+                    )
+
+                    if response.user:
+                        st.session_state.user = response.user
+                        st.success("Logged in successfully")
+                        st.rerun()
+                        st.stop()
+                    else:
+                        st.error("Invalid credentials")
+
+            with col2:
+                if st.button("🔓 Demo Login", key="demo_login_btn"):
+                    demo_login()
+                    st.success("Logged in as Demo User")
                     st.rerun()
                     st.stop()
-                else:
-                    st.error("Invalid credentials")
+
 
 
     # ---------- SIGN UP ----------
