@@ -1,6 +1,8 @@
 import streamlit as st
 from supabase import create_client, Client
 from groq import Groq
+import re
+
 
 # =============================
 # CONFIG
@@ -58,6 +60,47 @@ Message:
     )
 
     return response.choices[0].message.content
+def analyze_url(url):
+    prompt = f"""
+You are a cybersecurity expert.
+Analyze the following URL and assess scam risk as:
+Low / Medium / High.
+
+Explain WHY the URL may be risky and give safety advice.
+
+URL:
+{url}
+"""
+    response = groq_client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": "You are a cyber safety expert."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content
+
+
+def extract_risk_level(text):
+    text = text.lower()
+    if "high risk" in text or "high" in text:
+        return "HIGH"
+    elif "medium risk" in text or "medium" in text:
+        return "MEDIUM"
+    else:
+        return "LOW"
+
+
+def show_risk_badge(level):
+    if level == "HIGH":
+        st.markdown("### 🔴 **HIGH RISK**")
+        st.error("This content appears dangerous. Avoid interacting.")
+    elif level == "MEDIUM":
+        st.markdown("### 🟠 **MEDIUM RISK**")
+        st.warning("Proceed with caution. Verify before action.")
+    else:
+        st.markdown("### 🟢 **LOW RISK**")
+        st.success("No major threats detected, but stay alert.")
 
 # =============================
 # UI
@@ -84,25 +127,57 @@ if "user" not in st.session_state:
         email = st.text_input("New Email")
         password = st.text_input("New Password", type="password")
         if st.button("Create Account"):
-            signup(email, password)
-            st.success("Account created. Please login.")
+            try:
+                signup(email, password)
+                st.success("Account created successfully. Please login.")
+            except Exception as e:
+                if "weak password" in str(e).lower():
+                    st.error("Password too weak. Use at least 6 characters with numbers & symbols.")
+                 else:
+                    st.error("Signup failed. Try a stronger password or different email.")
 
 else:
-    st.subheader("🔍 Scam & Phishing Analyzer")
+    st.subheader("🔍 Cyber Threat Analyzer")
 
-    text = st.text_area(
-        "Paste suspicious message / email / SMS here",
-        height=200
-    )
+    tab1, tab2 = st.tabs(["📩 Message Scanner", "🌐 URL Checker"])
 
-    if st.button("Analyze Risk"):
-        if text.strip() == "":
-            st.warning("Please enter some text")
-        else:
-            with st.spinner("Analyzing..."):
-                result = analyze_text(text)
-                st.success("Analysis Complete")
-                st.write(result)
+    # =============================
+    # MESSAGE SCANNER
+    # =============================
+    with tab1:
+        st.markdown("#### Paste suspicious message / email / SMS")
+        text = st.text_area("", height=180)
+
+        if st.button("Analyze Message"):
+            if text.strip() == "":
+                st.warning("Please enter some text.")
+            else:
+                with st.spinner("Analyzing message..."):
+                    result = analyze_text(text)
+                    risk = extract_risk_level(result)
+                    show_risk_badge(risk)
+                    st.markdown("### 📄 Explanation")
+                    st.write(result)
+
+    # =============================
+    # URL SCANNER
+    # =============================
+    with tab2:
+        st.markdown("#### Enter suspicious website URL")
+        url = st.text_input("")
+
+        if st.button("Check URL Safety"):
+            if url.strip() == "":
+                st.warning("Please enter a URL.")
+            else:
+                with st.spinner("Analyzing URL..."):
+                    result = analyze_url(url)
+                    risk = extract_risk_level(result)
+                    show_risk_badge(risk)
+                    st.markdown("### 📄 Explanation")
+                    st.write(result)
+
+    st.divider()
 
     if st.button("Logout"):
         st.session_state.clear()
