@@ -1,8 +1,7 @@
 import streamlit as st
-from supabase import create_client, Client
+from supabase import create_client
 from groq import Groq
 import re
-
 
 # =============================
 # CONFIG
@@ -14,17 +13,31 @@ st.set_page_config(
 )
 
 # =============================
-# LOAD SECRETS
+# STYLES
+# =============================
+st.markdown("""
+<style>
+.stButton > button {
+    background-color: #4B4BFF;
+    color: white;
+    border-radius: 8px;
+    font-weight: bold;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =============================
+# SECRETS
 # =============================
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_ANON_KEY"]
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 # =============================
-# AUTH FUNCTIONS
+# AUTH
 # =============================
 def login(email, password):
     return supabase.auth.sign_in_with_password(
@@ -37,20 +50,17 @@ def signup(email, password):
     )
 
 # =============================
-# AI ANALYSIS
+# AI FUNCTIONS
 # =============================
-def analyze_text(text):
+def analyze_text(content):
     prompt = f"""
-You are a cybersecurity assistant.
-Analyze the following message and classify scam risk as:
-Low / Medium / High.
+Analyze the following content for scam risk.
+Classify as Low / Medium / High risk.
+Explain the reasoning and give safety advice.
 
-Also explain WHY it may be risky and give safety advice.
-
-Message:
-{text}
+Content:
+{content}
 """
-
     response = groq_client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
@@ -58,49 +68,26 @@ Message:
             {"role": "user", "content": prompt}
         ]
     )
-
     return response.choices[0].message.content
+
 def analyze_url(url):
-    prompt = f"""
-You are a cybersecurity expert.
-Analyze the following URL and assess scam risk as:
-Low / Medium / High.
-
-Explain WHY the URL may be risky and give safety advice.
-
-URL:
-{url}
-"""
-    response = groq_client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "system", "content": "You are a cyber safety expert."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return response.choices[0].message.content
-
+    return analyze_text(f"URL: {url}")
 
 def extract_risk_level(text):
     text = text.lower()
-    if "high risk" in text or "high" in text:
+    if "high" in text:
         return "HIGH"
-    elif "medium risk" in text or "medium" in text:
+    elif "medium" in text:
         return "MEDIUM"
-    else:
-        return "LOW"
-
+    return "LOW"
 
 def show_risk_badge(level):
     if level == "HIGH":
-        st.markdown("### 🔴 **HIGH RISK**")
-        st.error("This content appears dangerous. Avoid interacting.")
+        st.error("🔴 HIGH RISK — Avoid interacting with this content.")
     elif level == "MEDIUM":
-        st.markdown("### 🟠 **MEDIUM RISK**")
-        st.warning("Proceed with caution. Verify before action.")
+        st.warning("🟠 MEDIUM RISK — Proceed with caution.")
     else:
-        st.markdown("### 🟢 **LOW RISK**")
-        st.success("No major threats detected, but stay alert.")
+        st.success("🟢 LOW RISK — No major threats detected.")
 
 # =============================
 # UI
@@ -116,8 +103,7 @@ if "user" not in st.session_state:
         password = st.text_input("Password", type="password")
         if st.button("Login"):
             try:
-                user = login(email, password)
-                st.session_state.user = user
+                st.session_state.user = login(email, password)
                 st.success("Logged in successfully")
                 st.rerun()
             except:
@@ -129,56 +115,31 @@ if "user" not in st.session_state:
         if st.button("Create Account"):
             try:
                 signup(new_email, new_password)
-                st.success("Account created successfully. Please login.")
-            except Exception as e:
-                if "weak password" in str(e).lower():
-                    st.error("Password too weak. Use at least 6 characters with numbers & symbols.")
-                else:
-                    st.error("Signup failed. Try a different email or stronger password.")
+                st.success("Account created. Please login.")
+            except:
+                st.error("Signup failed. Use a stronger password.")
 
 else:
     st.subheader("🔍 Cyber Threat Analyzer")
 
     tab1, tab2 = st.tabs(["📩 Message Scanner", "🌐 URL Checker"])
 
-    # =============================
-    # MESSAGE SCANNER
-    # =============================
     with tab1:
-        st.markdown("#### Paste suspicious message / email / SMS")
-        text = st.text_area("", height=180)
-
+        message = st.text_area("Paste suspicious message", height=160)
         if st.button("Analyze Message"):
-            if text.strip() == "":
-                st.warning("Please enter some text.")
-            else:
-                with st.spinner("Analyzing message..."):
-                    result = analyze_text(text)
-                    risk = extract_risk_level(result)
-                    show_risk_badge(risk)
-                    st.markdown("### 📄 Explanation")
-                    st.write(result)
+            result = analyze_text(message)
+            show_risk_badge(extract_risk_level(result))
+            st.write(result)
 
-    # =============================
-    # URL SCANNER
-    # =============================
     with tab2:
-        st.markdown("#### Enter suspicious website URL")
-        url = st.text_input("")
-
-        if st.button("Check URL Safety"):
-            if url.strip() == "":
-                st.warning("Please enter a URL.")
-            else:
-                with st.spinner("Analyzing URL..."):
-                    result = analyze_url(url)
-                    risk = extract_risk_level(result)
-                    show_risk_badge(risk)
-                    st.markdown("### 📄 Explanation")
-                    st.write(result)
+        url = st.text_input("Enter suspicious URL")
+        if st.button("Check URL"):
+            result = analyze_url(url)
+            show_risk_badge(extract_risk_level(result))
+            st.write(result)
 
     st.divider()
 
     if st.button("Logout"):
         st.session_state.clear()
-        st.rerun()
+        
