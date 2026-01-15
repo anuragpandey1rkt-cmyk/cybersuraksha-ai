@@ -99,15 +99,19 @@ if "user" not in st.session_state:
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
 
     with tab1:
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        if st.button("Login"):
-            try:
-                st.session_state.user = login(email, password)
-                st.success("Logged in successfully")
-                st.rerun()
-            except:
-                st.error("Invalid credentials")
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+
+            if st.button("Login"):
+                try:
+                    user = login(email, password)
+                    st.session_state.user = user
+                    st.success("Logged in successfully")
+                    st.rerun()
+                    st.stop()  # 🔥 IMPORTANT: stops further execution
+                except:
+                    st.error("Invalid credentials")
+
 
     with tab2:
         new_email = st.text_input("New Email")
