@@ -160,6 +160,14 @@ else:
                 result = analyze_text(message)
                 show_risk_badge(extract_risk_level(result))
                 st.write(result)
+                st.markdown("### 🛡️ Recommended Safety Actions")
+                st.markdown("""
+                - ❌ Do **not** click suspicious links  
+                - 🔒 Never share OTPs, passwords, or bank details  
+                - 🚫 Block and report the sender  
+                - 🏛️ Report cybercrime at **https://cybercrime.gov.in**
+                """)
+
 
     # ---------- URL SCANNER ----------
     with url_tab:
@@ -171,10 +179,23 @@ else:
                 result = analyze_url(url)
                 show_risk_badge(extract_risk_level(result))
                 st.write(result)
+                st.markdown("### 🛡️ Recommended Safety Actions")
+                st.markdown("""
+                - ❌ Do **not** click suspicious links  
+                - 🔒 Never share OTPs, passwords, or bank details  
+                - 🚫 Block and report the sender  
+                - 🏛️ Report cybercrime at **https://cybercrime.gov.in**
+                """)
+
 
     st.divider()
+    st.caption(
+    "⚠️ This tool provides risk indicators and awareness guidance. "
+    "Final decisions should always be made by the user."
+     )
 
     if st.button("Logout", key="logout"):
         st.session_state.clear()
         st.rerun()
+
 
